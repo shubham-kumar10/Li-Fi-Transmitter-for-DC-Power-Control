@@ -41,45 +41,27 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart4;
-//,0,0,0,0,0,0
 /* USER CODE BEGIN PV */
-uint8_t encoded[2]={0x00,0x00};uint8_t data[8]={0,0,0,0,0,0,0,0};uint8_t i=0,j=0;uint8_t tmp=0;
-uint8_t decoded,count, pattern,rx[2]={0x00,0x00},x=0,k,l,v,b,c;
-uint16_t msg,up,down,left,right,adc_output,prevData=0;
-uint16_t captures1[2],frequency1,diffCapture1,DutyCycle1=0x00,ccr1,DUTY;
-uint16_t captures2[2],frequency2,diffCapture2,DutyCycle2=0x00;
-uint16_t Capture,COUNT,Freq;
-uint32_t clk1,clk2,clk3,rx_bit,rx_data,r[1]={1};
-uint32_t dac_output,dac_value;
-uint8_t chk=0,f=0,msg_tmp=0;
+uint8_t encoded[2] = {0x00, 0x00};
+uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+uint8_t i = 0, j = 0;
+uint8_t tmp = 0;
+uint8_t decoded, count, pattern, rx[2] = {0x00, 0x00}, x = 0, k, l, v, b, c;
+uint16_t msg, up, down, left, right, adc_output, prevData = 0;
+uint16_t captures1[2], frequency1, diffCapture1, DutyCycle1 = 0x00, ccr1, DUTY;
+uint16_t captures2[2], frequency2, diffCapture2, DutyCycle2 = 0x00;
+uint16_t Capture, COUNT, Freq;
+uint32_t clk1, clk2, clk3, rx_bit, rx_data, r[1] = {1};
+uint32_t dac_output, dac_value;
+uint8_t chk = 0, f = 0, msg_tmp = 0;
 uint32_t PERIOD = 19999;
-uint8_t frame[5]={0x11,0,0,0,0};
-uint16_t prevX,prevDC1,prevDC2;
+uint8_t frame[5] = {0x11, 0, 0, 0, 0};
+uint16_t prevX, prevDC1, prevDC2;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,81 +79,81 @@ static void create(void);
 /* USER CODE BEGIN 0 */
 static void UART_encode(uint16_t var)
 {
-	tmp = var;
-	for (i = 0; i < 2; i++) 
-	{
-		encoded[i] = 0;    
-		for (j = 0; j < 4; j++) 
-		{
-			encoded[i] >>= 2;
-			if (tmp & 0x01)
-					encoded[i] |= 0x40;  
-			else
-					encoded[i] |= 0x80;  
-			tmp >>= 1;
-		}
-	}
+  tmp = var;
+  for (i = 0; i < 2; i++)
+  {
+    encoded[i] = 0;
+    for (j = 0; j < 4; j++)
+    {
+      encoded[i] >>= 2;
+      if (tmp & 0x01)
+        encoded[i] |= 0x40;
+      else
+        encoded[i] |= 0x80;
+      tmp >>= 1;
+    }
+  }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	count++;
-	if(htim->Instance == TIM6)
-	{
-		if(msg_tmp!=0)
-		{
-			v++;
-			msg_tmp>>= 1;
-			if(msg_tmp&0x01)
-				HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
-			else
-				HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
-		}
-	}
-	/* Uncomment for checking time period*/
-	/*
+  count++;
+  if (htim->Instance == TIM6)
+  {
+    if (msg_tmp != 0)
+    {
+      v++;
+      msg_tmp >>= 1;
+      if (msg_tmp & 0x01)
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+      else
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+    }
+  }
+  /* Uncomment for checking time period*/
+  /*
 		if(count%2==0)
 			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_5,GPIO_PIN_SET);
 		else
 			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_5,GPIO_PIN_RESET);
 	*/
 }
-		
+
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim->Channel==HAL_TIM_ACTIVE_CHANNEL_1)
-	{
-		Capture = HAL_TIM_ReadCapturedValue(&htim1,TIM_CHANNEL_1);
-		COUNT = HAL_RCC_GetPCLK2Freq()/(htim1.Instance->PSC + 1);
-		Freq = COUNT/Capture;
-  
-	//if(htim->Channel==HAL_TIM_ACTIVE_CHANNEL_1)
-	
-		if (captures1[1] >= captures1[0])
-			diffCapture1 = captures1[1] - captures1[0];
-		else
-			diffCapture1 = (htim1.Instance->ARR - captures1[0]) + captures1[1];
+  if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
+  {
+    Capture = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
+    COUNT = HAL_RCC_GetPCLK2Freq() / (htim1.Instance->PSC + 1);
+    Freq = COUNT / Capture;
 
-		frequency1 = HAL_RCC_GetPCLK1Freq() / (htim1.Instance->PSC + 1);
-		frequency1 = (float) frequency1 / diffCapture1;
-		
-		 /* Get the Input Capture value */
+    //if(htim->Channel==HAL_TIM_ACTIVE_CHANNEL_1)
+
+    if (captures1[1] >= captures1[0])
+      diffCapture1 = captures1[1] - captures1[0];
+    else
+      diffCapture1 = (htim1.Instance->ARR - captures1[0]) + captures1[1];
+
+    frequency1 = HAL_RCC_GetPCLK1Freq() / (htim1.Instance->PSC + 1);
+    frequency1 = (float)frequency1 / diffCapture1;
+
+    /* Get the Input Capture value */
     captures1[0] = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-		captures1[1] = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
-		ccr1 = TIM1->CCR1;
-    
+    captures1[1] = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
+    ccr1 = TIM1->CCR1;
+
     if (captures1[0] != 0)
     {
       /* Duty cycle computation */
-      DutyCycle1 = ( captures1[1] * 100)/captures1[0];
-      frequency1 = (HAL_RCC_GetHCLKFreq())/captures1[0];
-		}
-		else
-		{
-			DutyCycle1 = 0;
+      DutyCycle1 = (captures1[1] * 100) / captures1[0];
+      frequency1 = (HAL_RCC_GetHCLKFreq()) / captures1[0];
+    }
+    else
+    {
+      DutyCycle1 = 0;
       frequency1 = 0;
-		}
-		}
+    }
+  }
 }
 /* USER CODE END 0 */
 
@@ -212,18 +194,18 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
-	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_2);
-	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_3);
-	HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_4);
-	UART_encode(DutyCycle1);
+  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
+  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_2);
+  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_3);
+  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_4);
+  UART_encode(DutyCycle1);
   while (1)
   {
     /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
-		UART_encode(DutyCycle1);
-		HAL_UART_Transmit_IT(&huart4,(uint8_t *)encoded,2);
-		prevDC1 = DutyCycle1;
+    UART_encode(DutyCycle1);
+    HAL_UART_Transmit_IT(&huart4, (uint8_t *)encoded, 2);
+    prevDC1 = DutyCycle1;
   }
   /* USER CODE END 3 */
 }
@@ -251,8 +233,7 @@ void SystemClock_Config(void)
   }
   /**Initializes the CPU, AHB and APB busses clocks 
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_MSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -283,19 +264,10 @@ void SystemClock_Config(void)
   */
 static void MX_TIM1_Init(void)
 {
-
-  /* USER CODE BEGIN TIM1_Init 0 */
-
-  /* USER CODE END TIM1_Init 0 */
-
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_SlaveConfigTypeDef sSlaveConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_IC_InitTypeDef sConfigIC = {0};
-
-  /* USER CODE BEGIN TIM1_Init 1 */
-
-  /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 1;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -354,10 +326,6 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM1_Init 2 */
-
-  /* USER CODE END TIM1_Init 2 */
-
 }
 
 /**
@@ -367,16 +335,7 @@ static void MX_TIM1_Init(void)
   */
 static void MX_TIM6_Init(void)
 {
-
-  /* USER CODE BEGIN TIM6_Init 0 */
-
-  /* USER CODE END TIM6_Init 0 */
-
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM6_Init 1 */
-
-  /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 7;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -392,10 +351,6 @@ static void MX_TIM6_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM6_Init 2 */
-
-  /* USER CODE END TIM6_Init 2 */
-
 }
 
 /**
@@ -405,14 +360,6 @@ static void MX_TIM6_Init(void)
   */
 static void MX_UART4_Init(void)
 {
-
-  /* USER CODE BEGIN UART4_Init 0 */
-
-  /* USER CODE END UART4_Init 0 */
-
-  /* USER CODE BEGIN UART4_Init 1 */
-
-  /* USER CODE END UART4_Init 1 */
   huart4.Instance = UART4;
   huart4.Init.BaudRate = 9600;
   huart4.Init.WordLength = UART_WORDLENGTH_8B;
@@ -427,10 +374,6 @@ static void MX_UART4_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN UART4_Init 2 */
-
-  /* USER CODE END UART4_Init 2 */
-
 }
 
 /**
@@ -451,7 +394,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
 }
 
 /* USER CODE BEGIN 4 */
@@ -470,7 +412,7 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
@@ -479,7 +421,7 @@ void Error_Handler(void)
   * @retval None
   */
 void assert_failed(char *file, uint32_t line)
-{ 
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
