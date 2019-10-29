@@ -12,3 +12,5 @@ This project aims to is to develop an embedded system for controlling home appli
 | BT-136 (TRIAC)         |
 | MOC3051 (Opto-coupler) |
 | ESP8266                |
+
+![image](https://user-images.githubusercontent.com/18024497/122681015-e5ff7a80-d20f-11eb-979b-24535b6cb87b.png)
